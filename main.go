@@ -1,7 +1,9 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 )
 
@@ -56,6 +58,23 @@ func GetCookieAndStatusCodeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ServeFileEmbedHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("first_name") != "" {
+		fmt.Fprint(w, resourceOk)
+	} else {
+		fmt.Fprint(w, resourceNotFound)
+	}
+}
+
+//go:embed resources
+var resources embed.FS
+
+//go:embed resources/ok.html
+var resourceOk string
+
+//go:embed resources/not_found.html
+var resourceNotFound string
+
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", IndexHandler)
@@ -64,6 +83,12 @@ func main() {
 	mux.HandleFunc("/say-hello-post", FormPostHandler)
 	mux.HandleFunc("/say-hello-post-cookie", CookieAndStatusCodeHandler)
 	mux.HandleFunc("/say-hello-get-cookie", GetCookieAndStatusCodeHandler)
+
+	directory, _ := fs.Sub(resources, "resources")
+	handle := http.FileServer(http.FS(directory))
+	mux.Handle("/static/", http.StripPrefix("/static", handle))
+
+	mux.HandleFunc("/serve-file", ServeFileEmbedHandler)
 
 	err := http.ListenAndServe(":9000", mux)
 	if err != nil {
