@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"net/http"
 )
@@ -66,8 +67,37 @@ func ServeFileEmbedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func TemplateHandler(w http.ResponseWriter, r *http.Request) {
+	t := template.Must(template.ParseFS(templates, "templates/*.gohtml"))
+
+	website := Website{
+		Title: "Website Title",
+		Name:  "Eka Rahadi",
+		Address: Address{
+			Street: "Jalan Soekarno Hatta",
+			Number: "12A",
+		},
+	}
+
+	t.ExecuteTemplate(w, "home.gohtml", website)
+}
+
+type Address struct {
+	Street string
+	Number string
+}
+
+type Website struct {
+	Title   string
+	Name    string
+	Address Address
+}
+
 //go:embed resources
 var resources embed.FS
+
+//go:embed templates/*.gohtml
+var templates embed.FS
 
 //go:embed resources/ok.html
 var resourceOk string
@@ -89,6 +119,7 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static", handle))
 
 	mux.HandleFunc("/serve-file", ServeFileEmbedHandler)
+	mux.HandleFunc("/home", TemplateHandler)
 
 	err := http.ListenAndServe(":9000", mux)
 	if err != nil {
