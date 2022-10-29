@@ -82,6 +82,42 @@ func TemplateHandler(w http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(w, "home.gohtml", website)
 }
 
+func TemplateActionHandler(w http.ResponseWriter, r *http.Request) {
+	website := Website{
+		Title: "Website Title",
+		// Name:  "Eka Rahadi",
+		Address: Address{
+			Street: "Jalan Soekarno Hatta",
+			Number: "12A",
+		},
+	}
+	myTemplates.ExecuteTemplate(w, "index.gohtml", website)
+}
+
+func TemplateLayoutHandler(w http.ResponseWriter, r *http.Request) {
+	website := Website{
+		Title: "Website Title",
+		Name:  "Template Layout",
+		Address: Address{
+			Street: "Jalan Soekarno Hatta",
+			Number: "12A",
+		},
+	}
+	myTemplates.ExecuteTemplate(w, "layout.gohtml", website)
+}
+
+func TemplateFunctionHandler(w http.ResponseWriter, r *http.Request) {
+	website := Website{
+		Title: "Website Title",
+		Name:  "Template Layout",
+		Address: Address{
+			Street: "Jalan Soekarno Hatta",
+			Number: "12A",
+		},
+	}
+	myTemplates.ExecuteTemplate(w, "greeting.gohtml", website)
+}
+
 type Address struct {
 	Street string
 	Number string
@@ -93,11 +129,16 @@ type Website struct {
 	Address Address
 }
 
+func (web Website) Greeting(name string) string {
+	return fmt.Sprintf("Hello %s Good to see you! I'm %s", name, web.Name)
+}
+
 //go:embed resources
 var resources embed.FS
 
 //go:embed templates/*.gohtml
 var templates embed.FS
+var myTemplates = template.Must(template.ParseFS(templates, "templates/*.gohtml"))
 
 //go:embed resources/ok.html
 var resourceOk string
@@ -120,6 +161,9 @@ func main() {
 
 	mux.HandleFunc("/serve-file", ServeFileEmbedHandler)
 	mux.HandleFunc("/home", TemplateHandler)
+	mux.HandleFunc("/template-action", TemplateActionHandler)
+	mux.HandleFunc("/template-layout", TemplateLayoutHandler)
+	mux.HandleFunc("/template-function", TemplateFunctionHandler)
 
 	err := http.ListenAndServe(":9000", mux)
 	if err != nil {
